@@ -30,18 +30,14 @@ app.post('/api/scan', (req, res) => {
   }
 
   const scanTime = new Date();
-  const delayMs = (config.delayMinutes || 5) * 60 * 1000;
-  const scheduledTime = new Date(scanTime.getTime() + delayMs);
+  const offsetMs = (config.delayMinutes || 5) * 60 * 1000;
+  const scheduledTime = new Date(scanTime.getTime() + offsetMs);
   const tenkoResponsible = driver.tenkoResponsible || config.defaultTenkoResponsible;
 
-  // 同一ドライバーの既存タイマーをキャンセル（再スキャン対応）
-  if (pendingJobs.has(qrCode)) {
-    clearTimeout(pendingJobs.get(qrCode).timer);
-    log(`[再スキャン] ${driver.driverName} のタイマーをリセット`);
-  }
+  log(`✅ スキャン受付: ${driver.driverName} → 業務開始予定 ${scheduledTime.toLocaleString('ja-JP')}`);
 
-  const timer = setTimeout(async () => {
-    pendingJobs.delete(qrCode);
+  // 非同期で即登録
+  (async () => {
     try {
       await registerTenko({
         driverName: driver.driverName,
@@ -52,11 +48,7 @@ app.post('/api/scan', (req, res) => {
     } catch (err) {
       log(`❌ 登録失敗 [${driver.driverName}]: ${err.message}`);
     }
-  }, delayMs);
-
-  pendingJobs.set(qrCode, { timer, driverName: driver.driverName, scheduledTime });
-
-  log(`✅ スキャン受付: ${driver.driverName} → ${scheduledTime.toLocaleString('ja-JP')} に登録予定`);
+  })();
 
   res.json({
     success: true,

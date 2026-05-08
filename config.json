@@ -27,6 +27,21 @@
       "qrCode": "driver_tominaga",
       "driverName": "冨永　翔平",
       "tenkoResponsible": null
+    },
+    {
+      "qrCode": "driver_mishima",
+      "driverName": "三島寛之",
+      "tenkoResponsible": null
+    },
+    {
+      "qrCode": "driver_beppu",
+      "driverName": "別府　すみ江",
+      "tenkoResponsible": null
+    },
+    {
+      "qrCode": "driver_masunaga",
+      "driverName": "増永　順三",
+      "tenkoResponsible": null
     }
   ]
 }

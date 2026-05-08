@@ -3,45 +3,13 @@
   "defaultTenkoResponsible": "戸上恭兵",
   "defaultInstruction": "安全運転をお願いします",
   "drivers": [
-    {
-      "qrCode": "driver_kawakami",
-      "driverName": "川上　勇貴",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_togami",
-      "driverName": "戸上恭兵",
-      "tenkoResponsible": "川上　勇貴"
-    },
-    {
-      "qrCode": "driver_irebe",
-      "driverName": "入部　勝真",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_oyabu",
-      "driverName": "大藪　文雄",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_tominaga",
-      "driverName": "冨永　翔平",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_mishima",
-      "driverName": "三島寛之",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_beppu",
-      "driverName": "別府　すみ江",
-      "tenkoResponsible": null
-    },
-    {
-      "qrCode": "driver_masunaga",
-      "driverName": "増永　順三",
-      "tenkoResponsible": null
-    }
+    { "qrCode": "driver_kawakami",  "driverName": "川上　勇貴",   "driverId": 3188, "tenkoResponsible": null },
+    { "qrCode": "driver_togami",    "driverName": "戸上恭兵",     "driverId": 3575, "tenkoResponsible": "川上　勇貴" },
+    { "qrCode": "driver_irebe",     "driverName": "入部　勝真",   "driverId": 3696, "tenkoResponsible": null },
+    { "qrCode": "driver_oyabu",     "driverName": "大藪　文雄",   "driverId": 3770, "tenkoResponsible": null },
+    { "qrCode": "driver_tominaga",  "driverName": "冨永　翔平",   "driverId": 3838, "tenkoResponsible": null },
+    { "qrCode": "driver_mishima",   "driverName": "三島寛之",     "driverId": 3837, "tenkoResponsible": null },
+    { "qrCode": "driver_beppu",     "driverName": "別府　すみ江", "driverId": 3771, "tenkoResponsible": null },
+    { "qrCode": "driver_masunaga",  "driverName": "増永　順三",   "driverId": 3839, "tenkoResponsible": null }
   ]
 }

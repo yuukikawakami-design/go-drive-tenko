@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>業務前点呼 QRスキャン</title>
+  <title>自動点呼 QRスキャン</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +31,6 @@
     header h1 {
       font-size: 18px;
       font-weight: 700;
-      color: #38bdf8;
       letter-spacing: 0.05em;
     }
 
@@ -39,6 +38,40 @@
       font-size: 12px;
       color: #94a3b8;
       margin-top: 2px;
+    }
+
+    /* ── モード切り替えトグル ── */
+    .mode-toggle {
+      display: flex;
+      width: 100%;
+      max-width: 380px;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: #64748b;
+    }
+
+    .mode-btn.active-pre {
+      background: #0ea5e9;
+      color: white;
+    }
+
+    .mode-btn.active-post {
+      background: #f97316;
+      color: white;
     }
 
     /* ── スキャン画面 ── */
@@ -56,13 +89,13 @@
       max-width: 380px;
       border-radius: 16px;
       overflow: hidden;
-      border: 2px solid #38bdf8;
       box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
     }
 
-    #reader { width: 100%; }
+    #reader-wrapper.mode-pre { border: 2px solid #38bdf8; }
+    #reader-wrapper.mode-post { border: 2px solid #f97316; box-shadow: 0 0 30px rgba(249, 115, 22, 0.3); }
 
-    /* html5-qrcode のデフォルトUI上書き */
+    #reader { width: 100%; }
     #reader > * { border: none !important; }
     #reader img { display: none !important; }
     #html5-qrcode-button-camera-permission,
@@ -83,7 +116,7 @@
       padding: 8px 16px;
     }
 
-    /* ── 完了カウントダウン画面 ── */
+    /* ── 結果画面 ── */
     #screen-result {
       display: none;
       flex-direction: column;
@@ -103,25 +136,20 @@
       text-align: center;
     }
 
-    .result-card .icon {
-      font-size: 48px;
-      margin-bottom: 8px;
-    }
+    .result-card .icon { font-size: 48px; margin-bottom: 8px; }
 
     .result-card .driver-name {
       font-size: 26px;
       font-weight: 700;
-      color: #38bdf8;
       margin-bottom: 4px;
     }
 
-    .result-card .label {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 16px;
-    }
+    .result-card .driver-name.pre { color: #38bdf8; }
+    .result-card .driver-name.post { color: #f97316; }
 
-    .result-card .scheduled-time {
+    .result-card .label { font-size: 13px; color: #64748b; margin-bottom: 16px; }
+
+    .result-card .info-box {
       font-size: 16px;
       color: #e2e8f0;
       background: #0f172a;
@@ -130,14 +158,26 @@
       margin-bottom: 8px;
     }
 
-    .result-card .scheduled-time .time-label {
+    .result-card .info-box .info-label {
       font-size: 11px;
       color: #64748b;
       display: block;
       margin-bottom: 2px;
     }
 
-    /* カウントダウン */
+    .result-card .mode-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .result-card .mode-badge.pre { background: #0c4a6e; color: #38bdf8; }
+    .result-card .mode-badge.post { background: #431407; color: #f97316; }
+
+    /* カウントダウン（業務前のみ表示） */
     .countdown-wrapper {
       background: #1e293b;
       border: 1px solid #334155;
@@ -148,11 +188,7 @@
       text-align: center;
     }
 
-    .countdown-label {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
+    .countdown-label { font-size: 13px; color: #64748b; margin-bottom: 8px; }
 
     .countdown-timer {
       font-size: 52px;
@@ -162,9 +198,7 @@
       letter-spacing: 0.05em;
     }
 
-    .countdown-timer.done {
-      color: #22c55e;
-    }
+    .countdown-timer.done { color: #22c55e; }
 
     .progress-bar {
       margin-top: 12px;
@@ -195,34 +229,8 @@
       letter-spacing: 0.03em;
     }
 
-    .btn-primary {
-      background: #38bdf8;
-      color: #0f172a;
-    }
-
-    .btn-danger {
-      background: #1e293b;
-      border: 1px solid #ef4444;
-      color: #ef4444;
-    }
-
-    /* 登録済みリスト */
-    #pending-list {
-      width: 100%;
-      max-width: 380px;
-    }
-
-    .pending-item {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
-      font-size: 13px;
-      color: #94a3b8;
-      display: flex;
-      justify-content: space-between;
-    }
+    .btn-primary { background: #38bdf8; color: #0f172a; }
+    .btn-danger { background: #1e293b; border: 1px solid #ef4444; color: #ef4444; }
 
     .toast {
       position: fixed;
@@ -248,34 +256,41 @@
 <body>
 
 <header>
-  <h1>業務前点呼 QRスキャン</h1>
+  <h1 id="header-title">業務前点呼 QRスキャン</h1>
   <p>自分のQRコードを読み込んでください</p>
 </header>
 
 <!-- スキャン画面 -->
 <div id="screen-scan">
-  <div id="reader-wrapper">
+  <!-- モード切り替え -->
+  <div class="mode-toggle">
+    <button class="mode-btn active-pre" id="btn-mode-pre" onclick="setMode('pre')">🚗 業務前点呼</button>
+    <button class="mode-btn" id="btn-mode-post" onclick="setMode('post')">🏁 終業後点呼</button>
+  </div>
+
+  <div id="reader-wrapper" class="mode-pre">
     <div id="reader"></div>
   </div>
   <div class="scan-hint">
     <span>📷 カメラにQRコードを向けてください</span>
   </div>
-  <div id="pending-list"></div>
 </div>
 
-<!-- 結果・カウントダウン画面 -->
+<!-- 結果画面 -->
 <div id="screen-result">
   <div class="result-card">
     <div class="icon">✅</div>
-    <div class="driver-name" id="result-name">－</div>
-    <div class="label">のQRコードを読み込みました</div>
-    <div class="scheduled-time">
-      <span class="time-label">業務開始予定日時</span>
+    <div class="mode-badge pre" id="result-badge">業務前点呼</div>
+    <div class="driver-name pre" id="result-name">－</div>
+    <div class="label" id="result-label">のQRコードを読み込みました</div>
+    <div class="info-box" id="result-info-box">
+      <span class="info-label" id="result-info-label">業務開始予定日時</span>
       <strong id="result-time">－</strong>
     </div>
   </div>
 
-  <div class="countdown-wrapper">
+  <!-- 業務前のみ表示するカウントダウン -->
+  <div class="countdown-wrapper" id="countdown-wrapper">
     <div class="countdown-label">点呼予定が自動登録されるまで</div>
     <div class="countdown-timer" id="countdown">5:00</div>
     <div class="progress-bar">
@@ -294,22 +309,27 @@
   let countdownSeconds = 0;
   let totalSeconds = 0;
   let currentQrCode = null;
+  let currentMode = 'pre'; // 'pre' or 'post'
+
+  function setMode(mode) {
+    currentMode = mode;
+    const isPre = mode === 'pre';
+
+    document.getElementById('btn-mode-pre').className = 'mode-btn' + (isPre ? ' active-pre' : '');
+    document.getElementById('btn-mode-post').className = 'mode-btn' + (!isPre ? ' active-post' : '');
+    document.getElementById('reader-wrapper').className = 'mode-' + mode;
+    document.getElementById('header-title').textContent = isPre ? '業務前点呼 QRスキャン' : '終業後点呼 QRスキャン';
+  }
 
   // QRスキャナー初期化
   const html5QrCode = new Html5Qrcode('reader');
-  const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 };
+  const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 };
 
   async function startScanner() {
     try {
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        onScanSuccess,
-        () => {}
-      );
+      await html5QrCode.start({ facingMode: 'environment' }, qrConfig, onScanSuccess, () => {});
     } catch (err) {
       showToast('カメラの起動に失敗しました', true);
-      console.error(err);
     }
   }
 
@@ -320,19 +340,17 @@
   }
 
   async function onScanSuccess(qrCode) {
-    if (currentQrCode === qrCode) return; // 連続スキャン防止
+    if (currentQrCode === qrCode) return;
     currentQrCode = qrCode;
 
-    // バイブレーション
     if (navigator.vibrate) navigator.vibrate(100);
-
     await stopScanner();
 
     try {
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrCode }),
+        body: JSON.stringify({ qrCode, type: currentMode }),
       });
 
       const data = await res.json();
@@ -344,12 +362,30 @@
         return;
       }
 
-      // 結果画面へ
-      document.getElementById('result-name').textContent = data.driverName;
-      const st = new Date(data.scheduledTime);
-      document.getElementById('result-time').textContent = formatJP(st);
+      // 結果画面を更新
+      const isPre = data.type === 'pre';
+      const nameEl = document.getElementById('result-name');
+      const badgeEl = document.getElementById('result-badge');
 
-      showResultScreen(data.delayMinutes * 60);
+      nameEl.textContent = data.driverName;
+      nameEl.className = 'driver-name ' + (isPre ? 'pre' : 'post');
+
+      badgeEl.textContent = isPre ? '業務前点呼' : '終業後点呼';
+      badgeEl.className = 'mode-badge ' + (isPre ? 'pre' : 'post');
+
+      if (isPre) {
+        const st = new Date(data.scheduledTime);
+        document.getElementById('result-info-label').textContent = '業務開始予定日時';
+        document.getElementById('result-time').textContent = formatJP(st);
+        document.getElementById('countdown-wrapper').style.display = 'block';
+        showResultScreen(data.delayMinutes * 60);
+      } else {
+        document.getElementById('result-info-label').textContent = '退勤時刻';
+        document.getElementById('result-time').textContent = data.endTime + ' に設定しました';
+        document.getElementById('countdown-wrapper').style.display = 'none';
+        showResultScreen(0);
+        showToast('終業時刻を登録しました ✅');
+      }
 
     } catch (err) {
       showToast('サーバーへの接続に失敗しました', true);
@@ -362,11 +398,13 @@
     document.getElementById('screen-scan').style.display = 'none';
     document.getElementById('screen-result').style.display = 'flex';
 
+    clearInterval(countdownInterval);
+    if (seconds <= 0) return;
+
     totalSeconds = seconds;
     countdownSeconds = seconds;
     updateCountdown();
 
-    clearInterval(countdownInterval);
     countdownInterval = setInterval(() => {
       countdownSeconds--;
       updateCountdown();
@@ -394,31 +432,12 @@
     document.getElementById('screen-result').style.display = 'none';
     document.getElementById('screen-scan').style.display = 'flex';
     document.getElementById('countdown').classList.remove('done');
-    loadPendingJobs();
     startScanner();
   }
 
   function cancelScan() {
     resetToScan();
     showToast('キャンセルしました');
-  }
-
-  async function loadPendingJobs() {
-    try {
-      const res = await fetch('/api/pending');
-      const data = await res.json();
-      const list = document.getElementById('pending-list');
-      if (data.pending.length === 0) {
-        list.innerHTML = '';
-        return;
-      }
-      list.innerHTML = '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">⏳ 登録待ち</div>' +
-        data.pending.map(j => `
-          <div class="pending-item">
-            <span>${j.driverName}</span>
-            <span>${formatJP(new Date(j.scheduledTime))}</span>
-          </div>`).join('');
-    } catch (_) {}
   }
 
   function formatJP(date) {
@@ -435,10 +454,7 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // 起動
-  loadPendingJobs();
   startScanner();
-  setInterval(loadPendingJobs, 10000);
 </script>
 
 </body>

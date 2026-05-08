@@ -217,4 +217,30 @@ async function registerTenko({ driverName, tenkoResponsible, scheduledTime, inst
   return result;
 }
 
-module.exports = { registerTenko };
+async function updateEndTime({ driverId, driverName, endTime }) {
+  log('========================================');
+  log(`終業時刻更新: ${driverName}`);
+  log(`退勤予定時刻: ${endTime}`);
+
+  const creds = await getApiCreds();
+  const headers = buildApiHeaders(creds);
+
+  const body = {
+    driver_id: driverId,
+    driving_estimated_end: { type: 1, time: endTime },
+    auto_roll_call_enabled: true,
+  };
+
+  log(`API POST: driver_id=${driverId}, time=${endTime}`);
+  const res = await httpRequest('POST', `${WEB_API}/api/v1/driver_roll_call_settings`, body, headers);
+
+  if (res.status >= 300) {
+    throw new Error(`終業時刻更新失敗: ${res.status} ${res.body}`);
+  }
+
+  const result = JSON.parse(res.body);
+  log(`✅ 終業時刻更新完了: ${driverName} @ ${endTime} (id=${result.id})`);
+  return result;
+}
+
+module.exports = { registerTenko, updateEndTime };

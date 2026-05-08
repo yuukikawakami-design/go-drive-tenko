@@ -1,0 +1,14 @@
+{
+  "name": "go-drive-tenko",
+  "version": "1.0.0",
+  "description": "GOドライブ 業務前自動点呼QRスキャンアプリ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "qrcode": "^1.5.4"
+  }
+}

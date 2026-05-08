@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>業務前点呼 QRスキャン</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Hiragino Sans', sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: #1e293b;
+      padding: 16px 20px;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.05em;
+    }
+
+    header p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* ── スキャン画面 ── */
+    #screen-scan {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    #reader-wrapper {
+      width: 100%;
+      max-width: 380px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+    }
+
+    #reader { width: 100%; }
+
+    /* html5-qrcode のデフォルトUI上書き */
+    #reader > * { border: none !important; }
+    #reader img { display: none !important; }
+    #html5-qrcode-button-camera-permission,
+    #html5-qrcode-button-camera-stop,
+    #html5-qrcode-button-camera-start { display: none !important; }
+
+    .scan-hint {
+      font-size: 14px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .scan-hint span {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 16px;
+    }
+
+    /* ── 完了カウントダウン画面 ── */
+    #screen-result {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 24px 20px;
+      gap: 20px;
+    }
+
+    .result-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .result-card .icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .result-card .driver-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+
+    .result-card .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .result-card .scheduled-time {
+      font-size: 16px;
+      color: #e2e8f0;
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .result-card .scheduled-time .time-label {
+      font-size: 11px;
+      color: #64748b;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* カウントダウン */
+    .countdown-wrapper {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .countdown-label {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .countdown-timer {
+      font-size: 52px;
+      font-weight: 800;
+      color: #f59e0b;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+    }
+
+    .countdown-timer.done {
+      color: #22c55e;
+    }
+
+    .progress-bar {
+      margin-top: 12px;
+      height: 6px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+      border-radius: 999px;
+      transition: width 1s linear;
+      width: 100%;
+    }
+
+    /* ボタン */
+    .btn {
+      width: 100%;
+      max-width: 380px;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-primary {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    .btn-danger {
+      background: #1e293b;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+
+    /* 登録済みリスト */
+    #pending-list {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .pending-item {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #22c55e;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.error { background: #ef4444; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>業務前点呼 QRスキャン</h1>
+  <p>自分のQRコードを読み込んでください</p>
+</header>
+
+<!-- スキャン画面 -->
+<div id="screen-scan">
+  <div id="reader-wrapper">
+    <div id="reader"></div>
+  </div>
+  <div class="scan-hint">
+    <span>📷 カメラにQRコードを向けてください</span>
+  </div>
+  <div id="pending-list"></div>
+</div>
+
+<!-- 結果・カウントダウン画面 -->
+<div id="screen-result">
+  <div class="result-card">
+    <div class="icon">✅</div>
+    <div class="driver-name" id="result-name">－</div>
+    <div class="label">のQRコードを読み込みました</div>
+    <div class="scheduled-time">
+      <span class="time-label">業務開始予定日時</span>
+      <strong id="result-time">－</strong>
+    </div>
+  </div>
+
+  <div class="countdown-wrapper">
+    <div class="countdown-label">点呼予定が自動登録されるまで</div>
+    <div class="countdown-timer" id="countdown">5:00</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="resetToScan()">別のQRコードをスキャン</button>
+  <button class="btn btn-danger" onclick="cancelScan()">キャンセル</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let countdownInterval = null;
+  let countdownSeconds = 0;
+  let totalSeconds = 0;
+  let currentQrCode = null;
+
+  // QRスキャナー初期化
+  const html5QrCode = new Html5Qrcode('reader');
+  const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 };
+
+  async function startScanner() {
+    try {
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        config,
+        onScanSuccess,
+        () => {}
+      );
+    } catch (err) {
+      showToast('カメラの起動に失敗しました', true);
+      console.error(err);
+    }
+  }
+
+  async function stopScanner() {
+    try {
+      if (html5QrCode.isScanning) await html5QrCode.stop();
+    } catch (_) {}
+  }
+
+  async function onScanSuccess(qrCode) {
+    if (currentQrCode === qrCode) return; // 連続スキャン防止
+    currentQrCode = qrCode;
+
+    // バイブレーション
+    if (navigator.vibrate) navigator.vibrate(100);
+
+    await stopScanner();
+
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrCode }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        showToast(data.error || 'エラーが発生しました', true);
+        currentQrCode = null;
+        startScanner();
+        return;
+      }
+
+      // 結果画面へ
+      document.getElementById('result-name').textContent = data.driverName;
+      const st = new Date(data.scheduledTime);
+      document.getElementById('result-time').textContent = formatJP(st);
+
+      showResultScreen(data.delayMinutes * 60);
+
+    } catch (err) {
+      showToast('サーバーへの接続に失敗しました', true);
+      currentQrCode = null;
+      startScanner();
+    }
+  }
+
+  function showResultScreen(seconds) {
+    document.getElementById('screen-scan').style.display = 'none';
+    document.getElementById('screen-result').style.display = 'flex';
+
+    totalSeconds = seconds;
+    countdownSeconds = seconds;
+    updateCountdown();
+
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      countdownSeconds--;
+      updateCountdown();
+      if (countdownSeconds <= 0) {
+        clearInterval(countdownInterval);
+        document.getElementById('countdown').classList.add('done');
+        document.getElementById('countdown').textContent = '登録完了！';
+        document.getElementById('progress-fill').style.width = '0%';
+        showToast('点呼予定を登録しました ✅');
+      }
+    }, 1000);
+  }
+
+  function updateCountdown() {
+    const m = Math.floor(countdownSeconds / 60);
+    const s = String(countdownSeconds % 60).padStart(2, '0');
+    document.getElementById('countdown').textContent = `${m}:${s}`;
+    const pct = (countdownSeconds / totalSeconds) * 100;
+    document.getElementById('progress-fill').style.width = `${pct}%`;
+  }
+
+  function resetToScan() {
+    clearInterval(countdownInterval);
+    currentQrCode = null;
+    document.getElementById('screen-result').style.display = 'none';
+    document.getElementById('screen-scan').style.display = 'flex';
+    document.getElementById('countdown').classList.remove('done');
+    loadPendingJobs();
+    startScanner();
+  }
+
+  function cancelScan() {
+    resetToScan();
+    showToast('キャンセルしました');
+  }
+
+  async function loadPendingJobs() {
+    try {
+      const res = await fetch('/api/pending');
+      const data = await res.json();
+      const list = document.getElementById('pending-list');
+      if (data.pending.length === 0) {
+        list.innerHTML = '';
+        return;
+      }
+      list.innerHTML = '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">⏳ 登録待ち</div>' +
+        data.pending.map(j => `
+          <div class="pending-item">
+            <span>${j.driverName}</span>
+            <span>${formatJP(new Date(j.scheduledTime))}</span>
+          </div>`).join('');
+    } catch (_) {}
+  }
+
+  function formatJP(date) {
+    return date.toLocaleString('ja-JP', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'short', hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // 起動
+  loadPendingJobs();
+  startScanner();
+  setInterval(loadPendingJobs, 10000);
+</script>
+
+</body>
+</html>
